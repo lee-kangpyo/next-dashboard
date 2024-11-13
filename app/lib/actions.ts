@@ -8,17 +8,17 @@ import { redirect } from 'next/navigation';
 const FormSchema = z.object({
     id:z.string(),
     customerId:z.string({
-        invalid_type_error: 'Please select a customer.',
+        invalid_type_error: '고객을 선택해주세요.',
     }),
-    amount:z.coerce.number().gt(0, {message: "0보다 큰수를 입력"}),
+    amount:z.coerce.number().gt(0, {message: "0보다 큰수를 입력 해야합니다."}),
     status:z.enum(['pending', 'paid'], {
-        invalid_type_error: 'Please select a invoice status.',
+        invalid_type_error: '송장 상태를 체크해주세요(pending, paid)',
     }),
     date:z.string(),
 })
 
 export type State = {
-    error?:{
+    errors?:{
         customerId?: string[];
         amount?: string[];
         status?: string[];
@@ -39,7 +39,7 @@ export const createInvoice = async (prevState: State, formData: FormData) => {
     if(!validatedFields.success){
         return {
             errors: validatedFields.error.flatten().fieldErrors,
-            message: 'Missing Fields. Failed to Create Invoice.',
+            message: 'Missing Fields: 송장 생성을 실패했습니다.',
           };
     }
 
@@ -55,7 +55,7 @@ export const createInvoice = async (prevState: State, formData: FormData) => {
         `;
     } catch (error) {
         return {
-            message: 'Database Error: Failed to Create Invoice.',
+            message: 'Database Error: 송장 생성을 실패했습니다.',
         };
     }
 
@@ -74,14 +74,23 @@ export const createInvoice = async (prevState: State, formData: FormData) => {
     //   const rawFormData2 = Object.fromEntries(formData.entries())
 }
 
-export const updateInvoice = async(id: string, formData:FormData) => {
-    const { customerId, amount, status } = UpdateInvoice.parse({
+export const updateInvoice = async(id: string, prevState: State, formData: FormData) => {
+    const validatedFields = UpdateInvoice.safeParse({
         customerId: formData.get('customerId'),
         amount: formData.get('amount'),
         status: formData.get('status'),
     });
-    const amountInCents = amount * 100;
 
+    
+    if(!validatedFields.success){
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Missing Fields: 송장 수정을 실패했습니다.',
+          };
+    }
+
+    const { customerId, amount, status } = validatedFields.data;
+    const amountInCents = amount * 100;
     try {
         await sql`
             UPDATE invoices
@@ -89,7 +98,7 @@ export const updateInvoice = async(id: string, formData:FormData) => {
             WHERE id = ${id}
           `;
       } catch (error) {
-        return { message: 'Database Error: Failed to Update Invoice.' };
+        return { message: 'Database Error: 송장 수정을 실패했습니다.' };
       }
 
     revalidatePath('/dashboard/invoices');

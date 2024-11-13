@@ -14,7 +14,7 @@ import { useActionState } from 'react';
 
 
 export default function Form({ customers }: { customers: CustomerField[] }) {
-  const initialState: State = { message: null, error: {} };
+  const initialState: State = { message: null, errors: {} };
   const [state, formAction] = useActionState(createInvoice, initialState);
 
   return (
@@ -135,11 +135,11 @@ export default function Form({ customers }: { customers: CustomerField[] }) {
                 ))}
             </div>
         </fieldset>
-        <div id='status-error' aria-live="polite" aria-atomic="true">
-          {state.errors?
+        <div id='error' aria-live="polite" aria-atomic="true">
+          {state.message?
               (
                 <p className="mt-2 text-sm text-red-500">
-                  항목을 모두 채워 주세요
+                  {state.message}
                 </p>
               )
               :
